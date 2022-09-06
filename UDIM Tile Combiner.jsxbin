@@ -199,9 +199,18 @@ var MaterialChannelHeader = MaterialChannelGroup.add("statictext", undefined, un
     MaterialChannelHeader.text = "Material Channel Sort Terms"; 
 
 var MaterialChannelEnterList = MaterialChannelGroup.add('edittext {properties: {name: "MaterialChannelEnterList", multiline: true, scrollable: true}}'); 
-    MaterialChannelEnterList.text = "BaseColor, Metallic, Roughness"; 
+    MaterialChannelEnterList.text = "BaseColor, Emissive, Normal, OcclusionRoughnessMetallic, Opacity, SSS"; 
     MaterialChannelEnterList.preferredSize.width = 218; 
     MaterialChannelEnterList.preferredSize.height = 65; 
+
+//FILLCOLORHACK
+var FillColorHeader = MaterialChannelGroup.add("statictext", undefined, undefined, {name: "FillColorHeader"}); 
+    FillColorHeader.text = "Fill color for each material (HEX)"; 
+
+var FillColorEnterList = MaterialChannelGroup.add('edittext {properties: {name: "FillColorEnterList", multiline: true, scrollable: true}}'); 
+    FillColorEnterList.text = "7D7D7D, 000000, 7F7FFF, 004C00, FFFFFF, 000000"; 
+    FillColorEnterList.preferredSize.width = 218; 
+    FillColorEnterList.preferredSize.height = 65; 
 
 // FILESAVESETTINGSHEADER
 // ======================
@@ -366,6 +375,9 @@ var ScriptCompletedAlertCheckbox = OtherScriptSettingsHeader.add("checkbox", und
 
 var IgnoreImageOverwritingWarningsCheckbox = OtherScriptSettingsHeader.add("checkbox", undefined, undefined, {name: "IgnoreImageOverwritingWarningsCheckbox"}); 
     IgnoreImageOverwritingWarningsCheckbox.text = "Ignore image overwriting warnings"; 
+	
+var KeepOpenFilesCheckbox = OtherScriptSettingsHeader.add("checkbox", undefined, undefined, {name: "KeepOpenFilesCheckbox"}); 
+    KeepOpenFilesCheckbox.text = "Keep combined files open"; 
 
 // BOTTOMOFSCRIPTSETTINGSGROUP
 // ===========================
@@ -602,6 +614,10 @@ MaterialChannelEnterList.onChange = function(){
 	var MaterialChannelEnterListString = String(MaterialChannelEnterList.text)
 }
 
+FillColorEnterList.onChange = function(){
+	var FillColorEnterListString = String(FillColorEnterList.text)
+}
+
 FileSavePrefix.onChange = function(){
 	var fileNamePrefix = String(FileSavePrefix.text)
 }
@@ -627,11 +643,13 @@ UDPSetButton.onClick = function() {
 		"FirstUDIMTile.text = " + '"' + FirstUDIMTile.text + '"' + "\n" +
 		"LastUDIMTile.text = " + '"' + LastUDIMTile.text + '"' + "\n" +
 		"MaterialChannelEnterList.text = " + '"' + MaterialChannelEnterList.text + '"' + "\n" +
+		"FillColorEnterList.text = " + '"' + FillColorEnterList.text + '"' + "\n" +
 		"FileSavePrefix.text = " + '"' + FileSavePrefix.text + '"' + "\n" +
 		"FileSaveExtensionType.selection = " + FileSaveExtensionType.selection + "\n" +
 		"FolderSelectionShortcutModeCheckbox.value = " + FolderSelectionShortcutModeCheckbox.value + "\n" +
 		"ScriptCompletedAlertCheckbox.value = " + ScriptCompletedAlertCheckbox.value + "\n" +
 		"IgnoreImageOverwritingWarningsCheckbox.value = " + IgnoreImageOverwritingWarningsCheckbox.value + "\n" +
+		"KeepOpenFilesCheckbox.value = " + KeepOpenFilesCheckbox.value + "\n" +
 		"allTexturesFolder = " + '"' + allTexturesFolder + '"' + "\n" +
 		"outputFolder = " + '"' + outputFolder + '"' + "\n" +
 		"}"	
@@ -715,21 +733,35 @@ var doneNotificationSettingsText = (
 	"\n" +
 	"Tile Setting: " + doneNotificationTileSetting + "\n" +
 	"\n" +
-	"Material Channel Sort Terms: " + MaterialChannelEnterList.text
+	"Material Channel Sort Terms: " + MaterialChannelEnterList.text + "\n" +
+	"\n" +
+	"Fill Colors For Material: " + FillColorEnterList.text
 )
-
-
 
 // Sorting and "sanitizing" material channel sort terms input into array
 
 var MaterialChannelEnterListString = String(MaterialChannelEnterList.text)
+var FillColorEnterListString = String(FillColorEnterList.text)
+
 var MatChannelSpaceReplace = String(MaterialChannelEnterListString.replace(/\s/g, ""))
+var FillColorSpaceReplace = String(FillColorEnterListString.replace(/\s/g, ""))
+
 var MatChannelFilter = []
+var FillColorFilter = []
+
 var MatChannelFilter = MatChannelSpaceReplace.split(",")
+var FillColorFilter = FillColorSpaceReplace.split(",")
+
 var MaterialList = []
 for (var m = 0; m < MatChannelFilter.length; m++) {
+	var fillcol = ""
+	
+	if (FillColorFilter[m].length > 0) {
+		fillcol = FillColorFilter[m]
+	}
+
 	if(MatChannelFilter[m].length > 0) {
-		MaterialList.push(MatChannelFilter[m])
+		MaterialList.push([MatChannelFilter[m], fillcol])
 	}
 }
 
@@ -740,8 +772,9 @@ for (var m = 0; m < MatChannelFilter.length; m++) {
 var okayToRun = true
 
 if (runsOnOS === ""){
-	okayToRun = false
-	alert("Error: Unrecognized OS! Please run this script on a Windows or MacOS operating system.")
+	okayToRun = true
+	runsOnOS = "Windows"
+	//alert("Error: Unrecognized OS! Please run this script on a Windows or MacOS operating system.")
 }
 
 if (allTexturesFolder === ""){
@@ -815,7 +848,7 @@ app.displayDialogs = DialogModes.NO
 	
 		// Sorting script
 		for (var a = 0; a < MaterialList.length; a++) {
-		var MaterialString = MaterialList[a]					
+		var MaterialString = MaterialList[a][0]					
 		var photoshopScriptArrayList = []
 		
 			for (var b = 0; b < allTextureFilesList.length; b++) {	
@@ -901,7 +934,7 @@ app.displayDialogs = DialogModes.NO
 
 		// Sorting script
 		for (var d = 0; d < MaterialList.length; d++) {
-		var MaterialString = MaterialList[d]					
+		var MaterialString = MaterialList[d][0]					
 		var UDIMString = Number(SingleUDIMTile.text)
 		var photoshopScriptArrayList = []
 
@@ -997,7 +1030,8 @@ app.displayDialogs = DialogModes.NO
 		
 		// Sorting script
 		for (var h = 0; h < MaterialList.length; h++) {
-		var MaterialString = MaterialList[h]
+		var MaterialString = MaterialList[h][0]
+		var FillString = MaterialList[h][1]
 		
 			for (var i = 0; i < UDIMNumberList.length; i++) {
 				var UDIMString = UDIMNumberList[i]
@@ -1022,8 +1056,25 @@ app.displayDialogs = DialogModes.NO
 				if (photoshopScriptArrayList.length > 0){
 							
 					var firstFile = photoshopScriptArrayList[0]
+					
 					open(firstFile)
 					var mergingDoc = app.activeDocument
+					
+						if (FillString.length > 0)
+						{
+							var originalLayer = app.activeDocument.activeLayer;
+							var layerRef = app.activeDocument.artLayers.add();
+							
+							layerRef.name = "FILLLAYER";
+							layerRef.blendMode = BlendMode.NORMAL;
+							
+							var color = new SolidColor
+							color.rgb.hexValue = FillString
+							
+							app.activeDocument.selection.fill(color, ColorBlendMode.NORMAL, 100, false);
+							
+							layerRef.moveAfter(originalLayer);
+						}
 					
 						for (var k = 1; k < photoshopScriptArrayList.length; k++) {
 							open(photoshopScriptArrayList[k])
@@ -1033,6 +1084,7 @@ app.displayDialogs = DialogModes.NO
 							copyFromDoc.close(SaveOptions.DONOTSAVECHANGES)
 							
 						}
+						
 					
 					if (runsOnOS === "Windows") {
 						var fileNameToSave = String(outputFolder.fsName.toString() + "\\" + FileSavePrefix.text + MaterialString + "." + UDIMString)	
@@ -1075,8 +1127,10 @@ app.displayDialogs = DialogModes.NO
 						saveFunctionUDIMRange(".psd", PhotoshopSaveOptions)
 					}
 					
-					mergingDoc.close(SaveOptions.DONOTSAVECHANGES)
-
+					//MaterialString.indexOf("Normal") != 0 && 
+					if (KeepOpenFilesCheckbox.value == false) {
+						mergingDoc.close(SaveOptions.DONOTSAVECHANGES)
+					}
 				}
 			}
 		}
@@ -1118,6 +1172,7 @@ app.displayDialogs = DialogModes.NO
 		"FirstUDIMTile.text = " + '"' + FirstUDIMTile.text + '"' + "\n" +
 		"LastUDIMTile.text = " + '"' + LastUDIMTile.text + '"' + "\n" +
 		"MaterialChannelEnterList.text = " + '"' + MaterialChannelEnterList.text + '"' + "\n" +
+		"FillColorEnterList.text = " + '"' + FillColorEnterList.text + '"' + "\n" +
 		"FileSavePrefix.text = " + '"' + FileSavePrefix.text + '"' + "\n" +
 		"FileSaveExtensionType.selection = " + FileSaveExtensionType.selection + "\n" +
 		"FolderSelectionShortcutModeCheckbox.value = " + FolderSelectionShortcutModeCheckbox.value + "\n" +
